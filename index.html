@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Capital Index · Твоя финансовая траектория</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f7fc;
+            color: #1a2639;
+            line-height: 1.5;
+            padding: 20px 16px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .left-panel,
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 32px;
+            padding: 28px;
+            box-shadow: 0 20px 35px -10px rgba(0, 20, 40, 0.15);
+            border: 1px solid rgba(59, 75, 255, 0.08);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 22px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: #0b1b33;
+        }
+
+        .card-header i {
+            color: #3b4bff;
+            font-size: 1.6rem;
+        }
+
+        /* Gauge */
+        .gauge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 5px 0 15px;
+        }
+
+        .gauge {
+            width: 240px;
+            height: 130px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 240px 240px 0 0;
+            background: linear-gradient(90deg, #ff4d4d 0%, #ff9f4d 25%, #ffd94d 50%, #9eff6b 75%, #3bff8b 100%);
+            mask: radial-gradient(circle at 50% 100%, transparent 74px, white 75px);
+            -webkit-mask: radial-gradient(circle at 50% 100%, transparent 74px, white 75px);
+            margin-bottom: 15px;
+        }
+
+        .gauge-arrow {
+            width: 5px;
+            height: 100px;
+            background: #1a2a4f;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-90deg);
+            border-radius: 5px 5px 0 0;
+            transition: transform 0.5s cubic-bezier(0.2, 1.3, 0.4, 1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .gauge-arrow::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -7px;
+            width: 19px;
+            height: 19px;
+            background: #1a2a4f;
+            border-radius: 50%;
+        }
+
+        .status-level {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(145deg, #1e2f4a, #2a3f66);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 5px;
+        }
+
+        .status-tag {
+            background: #e2e9ff;
+            color: #2a3fdd;
+            padding: 8px 22px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-top: 8px;
+        }
+
+        /* Блоки */
+        .block-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eef2f8;
+        }
+
+        .block-score:last-child {
+            border-bottom: none;
+        }
+
+        .block-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            min-width: 130px;
+        }
+
+        .block-bar {
+            flex: 1;
+            height: 8px;
+            background: #e2e9f3;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 0 15px;
+        }
+
+        .block-bar-fill {
+            height: 100%;
+            background: #3b4bff;
+            border-radius: 20px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Форма */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2d3a5e;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .input-group input {
+            padding: 14px 16px;
+            border: 2px solid #dee7f2;
+            border-radius: 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: 0.2s;
+            background: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b4bff;
+            box-shadow: 0 0 0 4px rgba(59, 75, 255, 0.15);
+        }
+
+        /* Вопросы */
+        .questions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 8px;
+            margin: 10px 0 5px;
+        }
+
+        .question-item {
+            background: #f8faff;
+            padding: 14px 16px;
+            border-radius: 24px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #e2ebf6;
+        }
+
+        .question-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #3b4bff;
+            cursor: pointer;
+        }
+
+        /* График */
+        .chart-container {
+            height: 210px;
+            width: 100%;
+            margin: 15px 0 20px;
+        }
+
+        .metric-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+            background: #f0f5fe;
+            padding: 22px 20px;
+            border-radius: 28px;
+            margin: 15px 0;
+        }
+
+        .metric-item {
+            text-align: center;
+            flex: 1 1 100px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #162b4a;
+            line-height: 1.2;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #4d627a;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .insight {
+            background: #e9f3fa;
+            padding: 18px 22px;
+            border-radius: 28px;
+            border-left: 8px solid #3b4bff;
+            font-weight: 600;
+            font-size: 1rem;
+            margin: 15px 0 10px;
+        }
+
+        .btn {
+            background: #3b4bff;
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            box-shadow: 0 15px 25px -8px rgba(59, 75, 255, 0.4);
+        }
+
+        .btn:hover {
+            background: #2f3ae0;
+            transform: scale(1.02);
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-actions button {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            background: white;
+            border: 2px solid #dae3f0;
+            cursor: pointer;
+            transition: 0.15s;
+            color: #1e2f4a;
+        }
+
+        .footer-actions button:hover {
+            border-color: #3b4bff;
+            background: #edf3ff;
+        }
+
+        hr {
+            margin: 25px 0;
+            border: 2px dashed #dce5f2;
+        }
+
+        .github-corner {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        @media (max-width: 950px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .questions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- GitHub Corner (опционально) -->
+    <a href="https://github.com/FoxInDev/Life-Capital-Index" class="github-corner"
+        aria-label="View source on GitHub">
+        <svg width="80" height="80" viewBox="0 0 250 250"
+            style="fill:#3b4bff; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+            <path
+                d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+                fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+            <path
+                d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+                fill="currentColor" class="octo-body"></path>
+        </svg>
+    </a>
+
+    <div class="container">
+        <!-- Шапка -->
+        <div class="card"
+            style="background: linear-gradient(115deg, #0f2440, #1c3a62); color: white; border: none; padding: 32px;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+                <div>
+                    <h1 style="font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em;">📊 Life Capital Index</h1>
+                    <p style="color: #bdd3ff; font-size: 1.2rem; max-width: 550px;">Рассчитай индекс жизненного капитала
+                        и узнай, когда станешь финансово свободным</p>
+                </div>
+                <div
+                    style="background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); padding: 8px 20px; border-radius: 60px;">
+                    <span style="font-weight: 600;">🔥 Бесплатно · навсегда</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дашборд -->
+        <div class="dashboard" id="app">
+            <!-- Левая панель -->
+            <div class="left-panel">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-chart-pie"></i> Индекс жизненного капитала</div>
+                    <div class="gauge-container">
+                        <div class="gauge" id="gauge">
+                            <div class="gauge-arrow" id="gaugeArrow"
+                                style="transform: translateX(-50%) rotate(-90deg);"></div>
+                        </div>
+                        <div class="status-level" id="statusIndexDisplay">0</div>
+                        <div class="status-tag" id="statusTag">Начальный</div>
+                    </div>
+                    <div id="breakdownContainer"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-clipboard-check"></i> Оцени свои финансы и привычки</div>
+                    <div class="questions-grid" id="questionsContainer"></div>
+                    <button class="btn" id="updateStatusBtn">🔄 Обновить индекс статуса</button>
+                </div>
+            </div>
+
+            <!-- Правая панель -->
+            <div class="right-panel">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-chart-line"></i> Финансовая траектория</div>
+                    <div class="form-grid" id="trajectoryForm">
+                        <div class="input-group">
+                            <label>Возраст</label>
+                            <input type="number" id="age" value="30" min="18" max="80">
+                        </div>
+                        <div class="input-group">
+                            <label>Доход (₽/мес)</label>
+                            <input type="number" id="income" value="250000" min="0" step="1000">
+                        </div>
+                        <div class="input-group">
+                            <label>Расходы (₽/мес)</label>
+                            <input type="number" id="expenses" value="150000" min="0" step="1000">
+                        </div>
+                        <div class="input-group">
+                            <label>Капитал сейчас (₽)</label>
+                            <input type="number" id="capital" value="1000000" min="0" step="50000">
+                        </div>
+                        <div class="input-group">
+                            <label>Инвестиции (% от остатка)</label>
+                            <input type="number" id="investPercent" value="20" min="0" max="100">
+                        </div>
+                        <div class="input-group">
+                            <label>Доходность (% год)</label>
+                            <input type="number" id="returnPercent" value="9" min="0" max="30" step="0.5">
+                        </div>
+                        <div class="input-group">
+                            <label>Финансовая цель (₽)</label>
+                            <input type="number" id="goal" value="20000000" min="0" step="100000">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-chart-simple"></i> Результаты</div>
+
+                    <div class="metric-row" id="trajectoryMetrics">
+                        <div class="metric-item"><span class="metric-value" id="fireYear">—</span><span
+                                class="metric-label">FIRE возраст</span></div>
+                        <div class="metric-item"><span class="metric-value" id="yearsToGoal">—</span><span
+                                class="metric-label">лет до цели</span></div>
+                        <div class="metric-item"><span class="metric-value" id="finalCapital">—</span><span
+                                class="metric-label">капитал через 50 лет</span></div>
+                        <div class="metric-item"><span class="metric-value" id="safeWithdraw">—</span><span
+                                class="metric-label">4% в год</span></div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="trajectoryChart"></canvas>
+                    </div>
+
+                    <div class="insight" id="insightText">
+                        Введите данные, чтобы увидеть персональный анализ.
+                    </div>
+
+                    <div class="footer-actions">
+                        <button id="saveScenarioBtn"><i class="far fa-save"></i> Сохранить</button>
+                        <button id="loadScenarioBtn"><i class="fas fa-folder-open"></i> Загрузить</button>
+                        <button id="resetScenarioBtn"><i class="fas fa-undo"></i> Сброс</button>
+                    </div>
+
+                    <hr>
+
+                    <div style="text-align: center; color: #5f7396; font-size: 0.9rem;">
+                        <i class="fas fa-code-branch"></i> Open source · Бесплатно для всех · Исходники на GitHub
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ---------- СОСТОЯНИЕ ----------
+            let statusBlocks = [
+                { id: 'finance', name: '💰 Финансы', weight: 0.4, score: 68 },
+                { id: 'assets', name: '🏠 Активы', weight: 0.15, score: 42 },
+                { id: 'potential', name: '🧠 Потенциал', weight: 0.15, score: 73 },
+                { id: 'behavior', name: '📈 Поведение', weight: 0.15, score: 58 },
+                { id: 'stability', name: '⚖️ Устойчивость', weight: 0.15, score: 35 }
+            ];
+
+            const questionsData = [
+                { blockId: 'finance', text: 'Мой капитал выше среднего для моего возраста' },
+                { blockId: 'finance', text: 'Я откладываю >15% дохода' },
+                { blockId: 'finance', text: 'Я активно инвестирую (акции, фонды)' },
+                { blockId: 'assets', text: 'У меня есть недвижимость' },
+                { blockId: 'assets', text: 'Автомобиль бизнес-класса' },
+                { blockId: 'assets', text: 'Есть пассивный доход' },
+                { blockId: 'potential', text: 'Мой доход регулярно растёт' },
+                { blockId: 'potential', text: 'У меня есть дополнительные источники дохода' },
+                { blockId: 'potential', text: 'Я вкладываю в обучение и навыки' },
+                { blockId: 'behavior', text: 'Я веду учёт доходов и расходов' },
+                { blockId: 'behavior', text: 'Подушка безопасности >6 месяцев' },
+                { blockId: 'behavior', text: 'У меня нет потребительских кредитов' },
+                { blockId: 'stability', text: 'Мои долги < 30% дохода' },
+                { blockId: 'stability', text: 'У меня диверсифицированные инвестиции' },
+                { blockId: 'stability', text: 'Есть страховка жизни/здоровья' }
+            ];
+
+            let questionAnswers = questionsData.map(() => ({ value: Math.random() > 0.4 }));
+
+            // ---------- РАСЧЁТ СТАТУСА ----------
+            function calculateStatusFromAnswers() {
+                const blockScores = {
+                    finance: [], assets: [], potential: [], behavior: [], stability: []
+                };
+
+                questionsData.forEach((q, idx) => {
+                    if (questionAnswers[idx]?.value) {
+                        blockScores[q.blockId].push(100);
+                    } else {
+                        blockScores[q.blockId].push(0);
+                    }
+                });
+
+                statusBlocks = statusBlocks.map(block => {
+                    const scores = blockScores[block.id] || [];
+                    const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                    return { ...block, score: Math.round(avg) };
+                });
+
+                let totalIndex = statusBlocks.reduce((acc, b) => acc + (b.score * b.weight), 0);
+                return Math.min(100, Math.max(0, Math.round(totalIndex)));
+            }
+
+            function renderStatusUI() {
+                const idx = calculateStatusFromAnswers();
+                document.getElementById('statusIndexDisplay').innerText = idx;
+                const angle = -90 + (idx * 1.8);
+                document.getElementById('gaugeArrow').style.transform = `translateX(-50%) rotate(${angle}deg)`;
+
+                let tag = 'Начальный';
+                if (idx >= 80) tag = 'Финансово независимый';
+                else if (idx >= 65) tag = 'Продвинутый';
+                else if (idx >= 45) tag = 'Стабильный';
+                else if (idx >= 25) tag = 'Формирующийся';
+                document.getElementById('statusTag').innerText = tag;
+
+                const container = document.getElementById('breakdownContainer');
+                container.innerHTML = '';
+                statusBlocks.forEach(b => {
+                    const div = document.createElement('div');
+                    div.className = 'block-score';
+                    div.innerHTML = `
+                        <div class="block-label"><span>${b.name}</span></div>
+                        <div class="block-bar"><div class="block-bar-fill" style="width:${b.score}%;"></div></div>
+                        <span style="font-weight:700; min-width:40px;">${b.score}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            function renderQuestions() {
+                const qContainer = document.getElementById('questionsContainer');
+                qContainer.innerHTML = '';
+                questionsData.forEach((q, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'question-item';
+                    item.innerHTML = `
+                        <input type="checkbox" id="q_${i}" ${questionAnswers[i]?.value ? 'checked' : ''}>
+                        <label for="q_${i}">${q.text}</label>
+                    `;
+                    const chk = item.querySelector('input');
+                    chk.addEventListener('change', (e) => {
+                        questionAnswers[i].value = e.target.checked;
+                    });
+                    qContainer.appendChild(item);
+                });
+            }
+
+            // ---------- ТРАЕКТОРИЯ ----------
+            let trajectoryChart;
+
+            function calculateTrajectory() {
+                const age = parseInt(document.getElementById('age').value) || 30;
+                const income = parseInt(document.getElementById('income').value) || 0;
+                const expenses = parseInt(document.getElementById('expenses').value) || 0;
+                const capital = parseInt(document.getElementById('capital').value) || 0;
+                const investPerc = parseInt(document.getElementById('investPercent').value) || 0;
+                const returnPerc = parseFloat(document.getElementById('returnPercent').value) || 0;
+                const goal = parseInt(document.getElementById('goal').value) || 0;
+
+                const monthlyInvest = (income - expenses) * (investPerc / 100);
+                const annualInvest = monthlyInvest * 12;
+                const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
+
+                let cap = capital;
+                const years = 50;
+                const labels = [];
+                const data = [];
+                let fireAge = null;
+                let goalYear = null;
+
+                for (let y = 1; y <= years; y++) {
+                    const returns = cap * (returnPerc / 100);
+                    cap = cap + returns + annualInvest;
+                    if (cap < 0) cap = 0;
+                    labels.push(age + y);
+                    data.push(Math.round(cap));
+
+                    if (goalYear === null && cap >= goal) {
+                        goalYear = y;
+                        fireAge = age + y;
+                    }
+                }
+
+                document.getElementById('fireYear').innerText = fireAge ? fireAge : '>80';
+                document.getElementById('yearsToGoal').innerText = goalYear ? goalYear : '—';
+                document.getElementById('finalCapital').innerText = Math.round(cap).toLocaleString() + ' ₽';
+                const safe4 = cap * 0.04;
+                document.getElementById('safeWithdraw').innerText = Math.round(safe4).toLocaleString() + ' ₽';
+
+                let insightMsg = '';
+                if (savingsRate < 15) {
+                    insightMsg = '⚠️ Вы инвестируете меньше 15% дохода — это сильно замедляет достижение цели.';
+                } else if (goalYear && goalYear <= 15) {
+                    insightMsg = `🚀 Цель через ${goalYear} лет (в ${fireAge} лет). Отличный результат!`;
+                } else if (goalYear) {
+                    insightMsg = `📌 Цель через ${goalYear} лет (в ${fireAge} лет).`;
+                } else {
+                    insightMsg = '🔮 За 50 лет цель не достигается. Попробуйте увеличить % инвестиций.';
+                }
+                document.getElementById('insightText').innerText = insightMsg;
+
+                if (trajectoryChart) trajectoryChart.destroy();
+                const ctx = document.getElementById('trajectoryChart').getContext('2d');
+                trajectoryChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Капитал (₽)',
+                            data: data,
+                            borderColor: '#3b4bff',
+                            backgroundColor: 'rgba(59,75,255,0.08)',
+                            borderWidth: 3,
+                            tension: 0.2,
+                            fill: true,
+                            pointRadius: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            // ---------- СОХРАНЕНИЕ ----------
+            function saveScenario() {
+                const scenario = {
+                    age: document.getElementById('age').value,
+                    income: document.getElementById('income').value,
+                    expenses: document.getElementById('expenses').value,
+                    capital: document.getElementById('capital').value,
+                    investPercent: document.getElementById('investPercent').value,
+                    returnPercent: document.getElementById('returnPercent').value,
+                    goal: document.getElementById('goal').value,
+                    answers: questionAnswers.map(a => a.value)
+                };
+                localStorage.setItem('lifeCapitalData', JSON.stringify(scenario));
+                alert('✅ Сценарий сохранён');
+            }
+
+            function loadScenario() {
+                const saved = localStorage.getItem('lifeCapitalData');
+                if (!saved) {
+                    alert('Нет сохранённого сценария');
+                    return;
+                }
+                try {
+                    const sc = JSON.parse(saved);
+                    document.getElementById('age').value = sc.age || 30;
+                    document.getElementById('income').value = sc.income || 250000;
+                    document.getElementById('expenses').value = sc.expenses || 150000;
+                    document.getElementById('capital').value = sc.capital || 1000000;
+                    document.getElementById('investPercent').value = sc.investPercent || 20;
+                    document.getElementById('returnPercent').value = sc.returnPercent || 9;
+                    document.getElementById('goal').value = sc.goal || 20000000;
+                    if (sc.answers) {
+                        questionAnswers = sc.answers.map(v => ({ value: v }));
+                        renderQuestions();
+                    }
+                    calculateTrajectory();
+                    renderStatusUI();
+                    alert('✅ Сценарий загружен');
+                } catch (e) {
+                    alert('Ошибка загрузки');
+                }
+            }
+
+            function resetScenario() {
+                document.getElementById('age').value = 30;
+                document.getElementById('income').value = 250000;
+                document.getElementById('expenses').value = 150000;
+                document.getElementById('capital').value = 1000000;
+                document.getElementById('investPercent').value = 20;
+                document.getElementById('returnPercent').value = 9;
+                document.getElementById('goal').value = 20000000;
+
+                questionAnswers = questionsData.map(() => ({ value: Math.random() > 0.4 }));
+                renderQuestions();
+                calculateTrajectory();
+                renderStatusUI();
+                alert('🔄 Сброшено к начальным значениям');
+            }
+
+            // ---------- ЗАПУСК ----------
+            window.addEventListener('load', () => {
+                renderQuestions();
+                renderStatusUI();
+
+                ['age', 'income', 'expenses', 'capital', 'investPercent', 'returnPercent', 'goal'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', calculateTrajectory);
+                });
+
+                document.getElementById('updateStatusBtn').addEventListener('click', renderStatusUI);
+                document.getElementById('saveScenarioBtn').addEventListener('click', saveScenario);
+                document.getElementById('loadScenarioBtn').addEventListener('click', loadScenario);
+                document.getElementById('resetScenarioBtn').addEventListener('click', resetScenario);
+
+                calculateTrajectory();
+            });
+        })();
+    </script>
+</body>
+
+</html>
